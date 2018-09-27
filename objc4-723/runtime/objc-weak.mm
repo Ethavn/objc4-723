@@ -314,7 +314,7 @@ weak_entry_for_referent(weak_table_t *weak_table, objc_object *referent)
 
     if (!weak_entries) return nil;
 
-    size_t begin = hash_pointer(referent) & weak_table->mask;
+    size_t begin = hash_pointer(referent) & weak_table->mask; /// 根据地址值产生索引
     size_t index = begin;
     size_t hash_displacement = 0;
     while (weak_table->weak_entries[index].referent != referent) {
@@ -463,7 +463,7 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 {
     objc_object *referent = (objc_object *)referent_id;
 
-    weak_entry_t *entry = weak_entry_for_referent(weak_table, referent);
+    weak_entry_t *entry = weak_entry_for_referent(weak_table, referent); /// 把弱引用表和当前对象地址值，传递进去
     if (entry == nil) {
         /// XXX shouldn't happen, but does with mismatched CF/objc
         //printf("XXX no entry for clear deallocating %p\n", referent);

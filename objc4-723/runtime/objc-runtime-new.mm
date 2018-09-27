@@ -627,11 +627,11 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     bool isMeta = cls->isMetaClass();
 
     // fixme rearrange to remove these intermediate allocations
-    method_list_t **mlists = (method_list_t **)
+    method_list_t **mlists = (method_list_t **) /// 方法数组（二维数组）（多个分类，每个分类有多个方法）
         malloc(cats->count * sizeof(*mlists));
-    property_list_t **proplists = (property_list_t **)
+    property_list_t **proplists = (property_list_t **) /// 属性数组
         malloc(cats->count * sizeof(*proplists));
-    protocol_list_t **protolists = (protocol_list_t **)
+    protocol_list_t **protolists = (protocol_list_t **) /// 协议数组
         malloc(cats->count * sizeof(*protolists));
 
     // Count backwards through cats to get newest categories first
@@ -641,9 +641,9 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     int i = cats->count;
     bool fromBundle = NO;
     while (i--) {
-        auto& entry = cats->list[i];
+        auto& entry = cats->list[i]; /// 取出某个分类
 
-        method_list_t *mlist = entry.cat->methodsForMeta(isMeta);
+        method_list_t *mlist = entry.cat->methodsForMeta(isMeta); /// 取出分类中的对象方法
         if (mlist) {
             mlists[mcount++] = mlist;
             fromBundle |= entry.hi->isBundle();
@@ -661,17 +661,17 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
         }
     }
 
-    auto rw = cls->data();
+    auto rw = cls->data(); /// 得到类对象里面的数据
 
     prepareMethodLists(cls, mlists, mcount, NO, fromBundle);
-    rw->methods.attachLists(mlists, mcount);
+    rw->methods.attachLists(mlists, mcount); /// 将所有分类的对象方法，附加到类对象的方法列表中
     free(mlists);
     if (flush_caches  &&  mcount > 0) flushCaches(cls);
 
-    rw->properties.attachLists(proplists, propcount);
+    rw->properties.attachLists(proplists, propcount); /// 将所有分类的属性，附加到类对象的属性列表中
     free(proplists);
 
-    rw->protocols.attachLists(protolists, protocount);
+    rw->protocols.attachLists(protolists, protocount); /// 将所有分类的协议，附加到类对象的协议列表中
     free(protolists);
 }
 
@@ -772,7 +772,7 @@ static void remethodizeClass(Class cls)
                          cls->nameForLogging(), isMeta ? "(meta)" : "");
         }
         
-        attachCategories(cls, cats, true /*flush caches*/);        
+        attachCategories(cls, cats, true /*flush caches*/); /// 附加分类
         free(cats);
     }
 }
@@ -2032,7 +2032,7 @@ map_images(unsigned count, const char * const paths[],
 extern bool hasLoadMethods(const headerType *mhdr);
 extern void prepare_load_methods(const headerType *mhdr);
 
-void
+void /// 执行 dyld 提供的并且已被 map_images 处理后的 image 中的 +load
 load_images(const char *path __unused, const struct mach_header *mh)
 {
     // Return without taking locks if there are no +load methods here.
@@ -2040,13 +2040,13 @@ load_images(const char *path __unused, const struct mach_header *mh)
     printf("load_images：%s\n", path);
     recursive_mutex_locker_t lock(loadMethodLock);
 
-    // Discover load methods
+    // Discover load methods /// 收集所有的+load方法
     {
         rwlock_writer_t lock2(runtimeLock);
-        prepare_load_methods((const headerType *)mh);
+        prepare_load_methods((const headerType *)mh); /// 准备+load方法，将其放在一个全局列表中
     }
 
-    // Call +load methods (without runtimeLock - re-entrant)
+    // Call +load methods (without runtimeLock - re-entrant) ///  开始调用+load方法（根据方法地址直接调用，并不是经过objc_msgSend函数调用）
     call_load_methods();
 }
 
@@ -2552,7 +2552,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: realize future classes");
 
-    // Discover categories. 
+    // Discover categories. /// 收集分类
     for (EACH_HEADER) {
         category_t **catlist = 
             _getObjc2CategoryList(hi, &count);
@@ -2584,7 +2584,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             {
                 addUnattachedCategoryForClass(cat, cls, hi);
                 if (cls->isRealized()) {
-                    remethodizeClass(cls);
+                    remethodizeClass(cls); /// 重新组织方法
                     classExists = YES;
                 }
                 if (PrintConnecting) {
@@ -2700,9 +2700,9 @@ static void schedule_class_load(Class cls)
     if (cls->data()->flags & RW_LOADED) return;
 
     // Ensure superclass-first ordering
-    schedule_class_load(cls->superclass);
+    schedule_class_load(cls->superclass); /// 递归调用父类
 
-    add_class_to_loadable_list(cls);
+    add_class_to_loadable_list(cls); /// 将类 +load 方法，添加到全局列表
     cls->setInfo(RW_LOADED); 
 }
 
@@ -2722,19 +2722,19 @@ void prepare_load_methods(const headerType *mhdr)
     runtimeLock.assertWriting();
 
     classref_t *classlist = 
-        _getObjc2NonlazyClassList(mhdr, &count);
+        _getObjc2NonlazyClassList(mhdr, &count); /// 收集Class的 +load 方法（按编译顺序）
     for (i = 0; i < count; i++) {
-        schedule_class_load(remapClass(classlist[i]));
+        schedule_class_load(remapClass(classlist[i])); /// 将类 +load 方法，添加到全局列表
     }
 
-    category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count);
+    category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count); /// 收集Category中的 +load 方法（按编译顺序）
     for (i = 0; i < count; i++) {
         category_t *cat = categorylist[i];
         Class cls = remapClass(cat->cls);
         if (!cls) continue;  // category for ignored weak-linked class
         realizeClass(cls);
         assert(cls->ISA()->isRealized());
-        add_category_to_loadable_list(cat);
+        add_category_to_loadable_list(cat); /// 将分类 +load 方法，添加到全局列表
     }
 }
 
@@ -6296,9 +6296,9 @@ void *objc_destructInstance(id obj)
         bool assoc = obj->hasAssociatedObjects();
 
         // This order is important.
-        if (cxx) object_cxxDestruct(obj);
+        if (cxx) object_cxxDestruct(obj); /// 清除成员变量
         if (assoc) _object_remove_assocations(obj);
-        obj->clearDeallocating();
+        obj->clearDeallocating(); /// 将指向当前对象的弱指针置为nil
     }
 
     return obj;

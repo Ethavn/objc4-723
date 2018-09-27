@@ -701,9 +701,9 @@ class list_array_tt {
             uint32_t newCount = oldCount + addedCount;
             setArray((array_t *)realloc(array(), array_t::byteSize(newCount)));
             array()->count = newCount;
-            memmove(array()->lists + addedCount, array()->lists, 
+            memmove(array()->lists + addedCount, array()->lists, /// array()->lists 原来的方法列表
                     oldCount * sizeof(array()->lists[0]));
-            memcpy(array()->lists, addedLists, 
+            memcpy(array()->lists, addedLists, /// addedLists 所有分类的方法列表
                    addedCount * sizeof(array()->lists[0]));
         }
         else if (!list  &&  addedCount == 1) {

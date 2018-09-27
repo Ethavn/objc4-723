@@ -375,18 +375,18 @@ storeWeak(id *location, objc_object *newObj)
 
     // Clean up old value, if any.
     if (haveOld) {
-        weak_unregister_no_lock(&oldTable->weak_table, oldObj, location);
+        weak_unregister_no_lock(&oldTable->weak_table, oldObj, location); /// 旧对象解除注册操作
     }
 
     // Assign new value, if any.
     if (haveNew) {
         newObj = (objc_object *)
             weak_register_no_lock(&newTable->weak_table, (id)newObj, location, 
-                                  crashIfDeallocating);
+                                  crashIfDeallocating); /// 新对象添加注册操作
         // weak_register_no_lock returns nil if weak store should be rejected
 
         // Set is-weakly-referenced bit in refcount table.
-        if (newObj  &&  !newObj->isTaggedPointer()) {
+        if (newObj  &&  !newObj->isTaggedPointer()) { /// TaggedPointer
             newObj->setWeaklyReferenced_nolock();
         }
 
@@ -706,8 +706,8 @@ class AutoreleasePoolPage
     magic_t const magic;
     id *next;
     pthread_t const thread;
-    AutoreleasePoolPage * const parent;
-    AutoreleasePoolPage *child;
+    AutoreleasePoolPage * const parent; /// 双向链表，指向上一个page对象
+    AutoreleasePoolPage *child; /// 双向链表，指向下一个page对象
     uint32_t const depth;
     uint32_t hiwat;
 
@@ -797,11 +797,11 @@ class AutoreleasePoolPage
 
 
     id * begin() {
-        return (id *) ((uint8_t *)this+sizeof(*this));
+        return (id *) ((uint8_t *)this+sizeof(*this)); /// 对象本身+对象大小（所有成员对象大小：7成员*8字节）
     }
-
+    
     id * end() {
-        return (id *) ((uint8_t *)this+SIZE);
+        return (id *) ((uint8_t *)this+SIZE); /// 宏4096
     }
 
     bool empty() {
@@ -839,7 +839,7 @@ class AutoreleasePoolPage
         while (this->next != stop) {
             // Restart from hotPage() every time, in case -release 
             // autoreleased more objects
-            AutoreleasePoolPage *page = hotPage();
+            AutoreleasePoolPage *page = hotPage(); /// 当前page
 
             // fixme I think this `while` can be `if`, but I can't prove it
             while (page->empty()) {
@@ -1073,9 +1073,9 @@ public:
         id *dest;
         if (DebugPoolAllocation) {
             // Each autorelease pool starts on a new pool page.
-            dest = autoreleaseNewPage(POOL_BOUNDARY);
+            dest = autoreleaseNewPage(POOL_BOUNDARY); /// 新建page
         } else {
-            dest = autoreleaseFast(POOL_BOUNDARY);
+            dest = autoreleaseFast(POOL_BOUNDARY); /// 遍历page
         }
         assert(dest == EMPTY_POOL_PLACEHOLDER || *dest == POOL_BOUNDARY);
         return dest;
@@ -1106,7 +1106,7 @@ public:
         objc_autoreleasePoolInvalid(token);
     }
     
-    static inline void pop(void *token) 
+    static inline void pop(void *token) /// 传进来的是POOL_BOUNDARY的内存地址
     {
         AutoreleasePoolPage *page;
         id *stop;
@@ -1140,7 +1140,7 @@ public:
 
         if (PrintPoolHiwat) printHiwat();
 
-        page->releaseUntil(stop);
+        page->releaseUntil(stop); /// 一直pop到POOL_BOUNDARY为止
 
         // memory: delete empty children
         if (DebugPoolAllocation  &&  page->empty()) {
@@ -1282,7 +1282,7 @@ objc_object::clearDeallocating_slow()
     SideTable& table = SideTables()[this];
     table.lock();
     if (isa.weakly_referenced) {
-        weak_clear_no_lock(&table.weak_table, (id)this);
+        weak_clear_no_lock(&table.weak_table, (id)this); /// 弱引用表
     }
     if (isa.has_sidetable_rc) {
         table.refcnts.erase(this);

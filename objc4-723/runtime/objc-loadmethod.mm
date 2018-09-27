@@ -194,14 +194,14 @@ static void call_class_loads(void)
     
     // Call all +loads for the detached list.
     for (i = 0; i < used; i++) {
-        Class cls = classes[i].cls;
+        Class cls = classes[i].cls; /// 获取Class指针
         load_method_t load_method = (load_method_t)classes[i].method;
         if (!cls) continue; 
 
-        if (PrintLoading) {
+        if (PrintLoading) { /// 获取方法对象
             _objc_inform("LOAD: +[%s load]\n", cls->nameForLogging());
         }
-        (*load_method)(cls, SEL_load);
+        (*load_method)(cls, SEL_load); /// 方法调用
     }
     
     // Destroy the detached list.
@@ -349,15 +349,15 @@ void call_load_methods(void)
 
     do {
         // 1. Repeatedly call class +loads until there aren't any more
-        while (loadable_classes_used > 0) {
+        while (loadable_classes_used > 0) { /// 重复调用Class的load方法，直到没有
             call_class_loads();
         }
 
         // 2. Call category +loads ONCE
-        more_categories = call_category_loads();
+        more_categories = call_category_loads(); /// 调用Category的load方法
 
         // 3. Run more +loads if there are classes OR more untried categories
-    } while (loadable_classes_used > 0  ||  more_categories);
+    } while (loadable_classes_used > 0  ||  more_categories); /// 继续调用，直到所有Class全部完成
 
     objc_autoreleasePoolPop(pool);
 

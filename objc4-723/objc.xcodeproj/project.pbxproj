@@ -820,6 +820,7 @@
 				PUBLIC_HEADERS_FOLDER_PATH = /usr/include/objc;
 				UNEXPORTED_SYMBOLS_FILE = unexported_symbols;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/include";
+				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
@@ -891,6 +892,7 @@
 				PUBLIC_HEADERS_FOLDER_PATH = /usr/include/objc;
 				UNEXPORTED_SYMBOLS_FILE = unexported_symbols;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/include";
+				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
